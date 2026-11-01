@@ -29,102 +29,116 @@
  *   sola línea del código cliente ni de las librerías externas.
  */
 
-const COLORS = {
-    blue: 'color: blue',
-    green: 'color: green',
-    purple: 'color: purple',
-    yellow: 'color: yellow',
-    cyan: 'color: cyan',
-};
+import { COLORS } from "../../helpers/colors.ts";
 
 //* 1. Interfaz Objetivo (Target): lo que la aplicación espera utilizar
 interface GeneradorQR {
-    generar(texto: string): string;
+  generar(texto: string): string;
 }
 
 //* 2. Librerías Externas Incompatibles (Adaptees): simuladas, no se pueden modificar
 class LibreriaQR {
-    makeCode(data: string, opciones: { size: number; margen: number }): string {
-        return `[QR ${opciones.size}px | margen ${opciones.margen}] ${data}`;
-    }
+  makeCode(data: string, opciones: { size: number; margen: number }): string {
+    return `[QR ${opciones.size}px | margen ${opciones.margen}] ${data}`;
+  }
 }
 
 class OtraLibreriaQR {
-    render(contenido: string): string {
-        return `<svg QR>${contenido}</svg>`;
-    }
+  render(contenido: string): string {
+    return `<svg QR>${contenido}</svg>`;
+  }
 }
 
 //* 3. Clases Adaptadoras (Adapters): traducen la interfaz objetivo a cada librería
 
 // Adaptador para LibreriaQR
 class AdaptadorLibreriaQR implements GeneradorQR {
-    private libreria: LibreriaQR;
-    private size: number;
-    private margen: number;
+  private libreria: LibreriaQR;
+  private size: number;
+  private margen: number;
 
-    constructor(libreria: LibreriaQR, size: number = 200, margen: number = 2) {
-        this.libreria = libreria;
-        this.size = size;
-        this.margen = margen;
-    }
+  constructor(libreria: LibreriaQR, size: number = 200, margen: number = 2) {
+    this.libreria = libreria;
+    this.size = size;
+    this.margen = margen;
+  }
 
-    generar(texto: string): string {
-        return this.libreria.makeCode(texto, {
-            size: this.size,
-            margen: this.margen,
-        });
-    }
+  generar(texto: string): string {
+    return this.libreria.makeCode(texto, {
+      size: this.size,
+      margen: this.margen,
+    });
+  }
 }
 
 // Adaptador para OtraLibreriaQR
 class AdaptadorOtraLibreriaQR implements GeneradorQR {
-    private otraLibreria: OtraLibreriaQR;
+  private otraLibreria: OtraLibreriaQR;
 
-    constructor(otraLibreria: OtraLibreriaQR) {
-        this.otraLibreria = otraLibreria;
-    }
+  constructor(otraLibreria: OtraLibreriaQR) {
+    this.otraLibreria = otraLibreria;
+  }
 
-    generar(texto: string): string {
-        return this.otraLibreria.render(texto);
-    }
+  generar(texto: string): string {
+    return this.otraLibreria.render(texto);
+  }
 }
 
 //* 4. Código Cliente: conoce ÚNICAMENTE la interfaz GeneradorQR
 function emitirCertificado(
-    generador: GeneradorQR,
-    participante: string,
-    evento: string,
+  generador: GeneradorQR,
+  participante: string,
+  evento: string,
 ): void {
-    const payloadVerificacion = `CERT|${evento}|${participante}`;
-    const codigoQR = generador.generar(payloadVerificacion);
+  const payloadVerificacion = `CERT|${evento}|${participante}`;
+  const codigoQR = generador.generar(payloadVerificacion);
 
-    console.log(`%c====================================================`, COLORS.cyan);
-    console.log(`%c       CERTIFICADO DE PARTICIPACIÓN - UCEVA         `, COLORS.green);
-    console.log(`%c====================================================`, COLORS.cyan);
-    console.log(`  Participante : ${participante}`);
-    console.log(`  Evento       : ${evento}`);
-    console.log(`  Código QR    : ${codigoQR}`);
-    console.log(`%c====================================================\n`, COLORS.cyan);
+  console.log(
+    `%c====================================================`,
+    COLORS.cyan,
+  );
+  console.log(
+    `%c       CERTIFICADO DE PARTICIPACIÓN - UCEVA         `,
+    COLORS.green,
+  );
+  console.log(
+    `%c====================================================`,
+    COLORS.cyan,
+  );
+  console.log(`  Participante : ${participante}`);
+  console.log(`  Evento       : ${evento}`);
+  console.log(`  Código QR    : ${codigoQR}`);
+  console.log(
+    `%c====================================================\n`,
+    COLORS.cyan,
+  );
 }
 
 function main() {
-    const evento = 'Congreso de Arquitectura de Software 2026';
+  const evento = "Congreso de Arquitectura de Software 2026";
 
-    // Uso con la primera librería externa mediante su adaptador (tamaño 200 por defecto)
-    console.log('%c1. Emitiendo certificado con AdaptadorLibreriaQR:', COLORS.blue);
-    const libreriaExterna1 = new LibreriaQR();
-    const adaptadorQR1: GeneradorQR = new AdaptadorLibreriaQR(libreriaExterna1);
+  // Uso con la primera librería externa mediante su adaptador (tamaño 200 por defecto)
+  console.log(
+    "%c1. Emitiendo certificado con AdaptadorLibreriaQR:",
+    COLORS.blue,
+  );
+  const libreriaExterna1 = new LibreriaQR();
+  const adaptadorQR1: GeneradorQR = new AdaptadorLibreriaQR(libreriaExterna1);
 
-    emitirCertificado(adaptadorQR1, 'Sebastián Morales', evento);
+  emitirCertificado(adaptadorQR1, "Sebastián Morales", evento);
 
-    // Uso con la segunda librería externa mediante su adaptador
-    // La función emitirCertificado no sufre ningún cambio
-    console.log('%c2. Emitiendo certificado con AdaptadorOtraLibreriaQR:', COLORS.purple);
-    const libreriaExterna2 = new OtraLibreriaQR();
-    const adaptadorQR2: GeneradorQR = new AdaptadorOtraLibreriaQR(libreriaExterna2);
+  // Uso con la segunda librería externa mediante su adaptador
+  // La función emitirCertificado no sufre ningún cambio
+  console.log(
+    "%c2. Emitiendo certificado con AdaptadorOtraLibreriaQR:",
+    COLORS.purple,
+  );
+  const libreriaExterna2 = new OtraLibreriaQR();
+  const adaptadorQR2: GeneradorQR = new AdaptadorOtraLibreriaQR(
+    libreriaExterna2,
+  );
 
-    emitirCertificado(adaptadorQR2, 'Valentina Ríos', evento);
+  emitirCertificado(adaptadorQR2, "Valentina Ríos", evento);
 }
 
 main();
