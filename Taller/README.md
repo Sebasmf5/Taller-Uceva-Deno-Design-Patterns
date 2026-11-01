@@ -11,6 +11,7 @@
 
 - **Sebastián Morales** (`sebastian.morales01@uceva.edu.co`)
 - **Camilo Suárez** (`juan.suarez04@uceva.edu.co`)
+- **Juan Estevan Santiago** (`juan.santiago01@uceva.edu.co`)
 - *(Agregar aquí los demás integrantes del grupo si aplica)*
 
 ---
@@ -30,9 +31,9 @@
 - **Estructurales (1):**
   7. **Facade** — [`facade.ts`](./02-Patrones-Estructurales/03-Facade/facade.ts)
 - **De Comportamiento (3):**
-  - *(Pendiente por agregar)*
-  - *(Pendiente por agregar)*
-  - *(Pendiente por agregar)*
+  8. **Strategy** — [`strategy.ts`](./03-Patrones-Comportamiento/01-Strategy/strategy.ts)
+  9. **Chain of Responsibility** — [`chain-of-responsibility.ts`](./03-Patrones-Comportamiento/02-Chain-Of-Responsibility/chain-of-responsibility.ts)
+  10. **Template Method** — [`template-method.ts`](./03-Patrones-Comportamiento/03-Template-Method/template-method.ts)
 
 ---
 
@@ -66,6 +67,18 @@
 - **Problema:** Para matricular una asignatura en la universidad es necesario interactuar en un orden estricto con tres subsistemas distintos: verificar paz y salvo y generar recibo en `Financiera`, comprobar prerrequisitos en `RegistroAcademico` y descontar el cupo en `ProgramacionAcademica`. Que cada cliente coordine estos pasos por su cuenta duplica lógica y facilita errores en el flujo.
 - **Solución:** Se implementó la fachada `MatriculaFacade` con un único método `matricular(codigo, materia, creditos)` que encapsula y coordina las llamadas a los tres subsistemas en el orden correcto.
 
+### 8. Patrón Strategy (`03-Patrones-Comportamiento/01-Strategy/strategy.ts`)
+- **Problema:** La cafetería de la universidad calcula el total de una cuenta con distintos descuentos (sin descuento, estudiante, docente o bono promocional). Sin el patrón, la clase de la cuenta tendría un if/else gigante que crecería con cada descuento nuevo.
+- **Solución:** Se definió la interfaz `EstrategiaDescuento` (`calcular(subtotal)`) con las estrategias `SinDescuento`, `DescuentoEstudiante`, `DescuentoDocente` y `BonoPromocional`. La clase `CuentaCafeteria` usa `setEstrategia()` para cambiar el descuento en tiempo de ejecución y `total()` para obtener el valor a pagar.
+
+### 9. Patrón Chain of Responsibility (`03-Patrones-Comportamiento/02-Chain-Of-Responsibility/chain-of-responsibility.ts`)
+- **Problema:** La solicitud de préstamo de una sala de estudio en la biblioteca debe pasar varias validaciones en orden y detenerse en la primera que falle. Si el solicitante llamara cada validación por su cuenta, repetiría lógica y el orden quedaría disperso.
+- **Solución:** La clase abstracta `ManejadorSolicitud` ofrece `siguiente()` (encadenamiento fluido) y `manejar()`. Los manejadores `ValidadorDatos`, `ValidadorSancion`, `ValidadorDisponibilidad` y `AprobadorFinal` aprueban y pasan la solicitud al siguiente, o la rechazan con un motivo claro.
+
+### 10. Patrón Template Method (`03-Patrones-Comportamiento/03-Template-Method/template-method.ts`)
+- **Problema:** La universidad genera reportes de notas (CSV), asistencia (HTML) y un resumen en texto plano. Todos siguen los mismos pasos (obtener datos, procesar, dar formato y entregar) y solo cambia el formato; sin el patrón, cada reporte duplicaría el flujo completo.
+- **Solución:** La clase abstracta `ReporteBase` define el método plantilla `generar()` con el flujo fijo, con `obtenerDatos()` y `procesar()` comunes, `formatear()` abstracto y el hook `agregarEncabezado()`. Las subclases `ReporteNotasCSV`, `ReporteAsistenciaHTML` y `ReporteResumenTexto` (que sobrescribe el hook) solo implementan lo que cambia.
+
 ---
 
 ## Ejecución de los Ejercicios
@@ -83,4 +96,9 @@ deno run Taller/Obligatorios/07-observer.ts
 deno run Taller/01-Patrones-Creacionales/02-Singleton/singleton.ts
 deno run Taller/01-Patrones-Creacionales/03-Abstract-Factory/abstract-factory.ts
 deno run Taller/02-Patrones-Estructurales/03-Facade/facade.ts
+
+# Patrones Adicionales (Comportamiento)
+deno run Taller/03-Patrones-Comportamiento/01-Strategy/strategy.ts
+deno run Taller/03-Patrones-Comportamiento/02-Chain-Of-Responsibility/chain-of-responsibility.ts
+deno run Taller/03-Patrones-Comportamiento/03-Template-Method/template-method.ts
 ```
