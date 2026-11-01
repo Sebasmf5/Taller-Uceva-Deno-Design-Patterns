@@ -1,40 +1,28 @@
 /**
- * ! Patrón Builder (Constructor):
+ * ! Patrón Builder
  *
  * 1. ¿Qué hace el patrón?
- * Es un patrón de diseño creacional que permite construir objetos complejos
- * paso a paso. En lugar de invocar un constructor gigante con decenas de
- * parámetros, el patrón extrae la lógica de ensamblaje a un objeto constructor
- * (`EventoBuilder`) con métodos encadenables (interfaz fluida) que configuran
- * únicamente las partes necesarias antes de generar el producto final (`Evento`).
+ * Permite construir objetos complejos paso a paso mediante métodos encadenables,
+ * configurando solo los atributos necesarios antes de crear el objeto final.
  *
  * 2. ¿Qué problema se está resolviendo?
- * En la gestión de eventos universitarios (conferencias, talleres, seminarios,
- * charlas abiertas), cada evento posee múltiples atributos donde casi todos son
- * opcionales: lugar definido o por definir, inscripción previa con límite de cupo
- * o entrada libre, lista de ponentes, transmisión en vivo con URL, entrega de
- * certificados de participación y distintos métodos de verificación de asistencia.
- * Intentar resolver esto con un único constructor provoca el antipatrón
- * "Telescoping Constructor" (constructores telescópicos), obligando al cliente a
- * recordar el orden exacto de muchos parámetros y pasar múltiples valores `null`,
- * `false` o arreglos vacíos `[]` que hacen el código difícil de leer y mantener.
+ * Un evento universitario tiene muchos datos opcionales (lugar, cupo, ponentes,
+ * transmisión, certificado y verificación). Un solo constructor con todos esos
+ * parámetros sería ilegible y obligaría a pasar múltiples valores nulos.
  *
  * 3. ¿Por qué Builder es adecuado para ese problema?
- * - Permite construir distintas representaciones de un `Evento` (desde una charla
- *   básica hasta un congreso completo) utilizando el mismo proceso de construcción.
- * - Otorga legibilidad mediante métodos expresivos (`conNombre`, `enFecha`,
- *   `conInscripcion`, `conCertificadoParticipacion`, etc.).
- * - Centraliza las reglas de validación e invariantes de dominio en el método
- *   `build()` antes de instanciar el objeto final.
- * - Garantiza que el producto resultante (`Evento`) sea completamente inmutable
- *   (`readonly`) una vez construido.
+ * Permite armar desde un evento simple hasta uno completo con el mismo código
+ * de construcción, validando los datos obligatorios en `build()` y entregando
+ * un objeto `Evento` inmutable.
+ *
+ * https://refactoring.guru/es/design-patterns/builder
  */
 
 import { COLORS } from "../../helpers/colors.ts";
 
 type MetodoVerificacion = "ninguno" | "firma digital" | "reconocimiento facial";
 
-//* Producto: Clase Evento (Inmutable con campos readonly)
+//* 1. Producto: Evento (campos readonly)
 class Evento {
   readonly nombre: string;
   readonly fecha: string;
@@ -72,33 +60,31 @@ class Evento {
   }
 
   resumen(): string {
-    const infoCupo = this.cupo !== null ? `${this.cupo} personas` : "Ilimitado";
-    const infoInscripcion = this.requiereInscripcion
-      ? "Sí"
-      : "No (Entrada libre)";
-    const infoPonentes = this.ponentes.length > 0
+    const cupo = this.cupo !== null ? `${this.cupo} personas` : "Ilimitado";
+    const inscripcion = this.requiereInscripcion ? "Sí" : "No";
+    const ponentes = this.ponentes.length > 0
       ? this.ponentes.join(", ")
-      : "Sin ponentes registrados";
-    const infoTransmision = this.transmisionEnVivo
+      : "Sin ponentes";
+    const transmision = this.transmisionEnVivo
       ? `Sí (${this.urlTransmision})`
       : "No";
-    const infoCertificado = this.enviaCertificado ? "Sí" : "No";
+    const certificado = this.enviaCertificado ? "Sí" : "No";
 
-    return `Resumen del Evento Universitario:
-            Nombre:                 ${this.nombre}
-            Fecha:                  ${this.fecha}
-            Lugar:                  ${this.lugar}
-            Requiere inscripción:   ${infoInscripcion}
-            Cupo máximo:            ${infoCupo}
-            Ponentes:               ${infoPonentes}
-            Transmisión en vivo:    ${infoTransmision}
-            Envía certificado:      ${infoCertificado}
-            Método de verificación: ${this.metodoVerificacion}
-        `;
+    return `Resumen del Evento:
+          Nombre:                 ${this.nombre}
+          Fecha:                  ${this.fecha}
+          Lugar:                  ${this.lugar}
+          Requiere inscripción:   ${inscripcion}
+          Cupo:                   ${cupo}
+          Ponentes:               ${ponentes}
+          Transmisión en vivo:    ${transmision}
+          Envía certificado:      ${certificado}
+          Método de verificación: ${this.metodoVerificacion}
+    `;
   }
 }
 
-//* Builder: Clase EventoBuilder para construir objetos Evento paso a paso
+//* 2. Builder: EventoBuilder
 class EventoBuilder {
   private nombre: string = "";
   private fecha: string = "";
@@ -164,16 +150,7 @@ class EventoBuilder {
 
     if (this.requiereInscripcion && (this.cupo === null || this.cupo <= 0)) {
       throw new Error(
-        `El evento "${this.nombre}" requiere inscripción, por lo que el cupo debe ser mayor a 0 (valor recibido: ${this.cupo}).`,
-      );
-    }
-
-    if (
-      this.transmisionEnVivo &&
-      (!this.urlTransmision || !this.urlTransmision.trim())
-    ) {
-      throw new Error(
-        "Si el evento tiene transmisión en vivo, debe especificar una URL válida.",
+        "Si el evento requiere inscripción, el cupo debe ser mayor a 0.",
       );
     }
 
@@ -192,57 +169,54 @@ class EventoBuilder {
   }
 }
 
-//* Código Cliente
-function main() {
+//* 3. Código cliente
+function main(): void {
   // 1. Evento simple (solo nombre y fecha)
   const eventoSimple = new EventoBuilder()
-    .conNombre("Bienvenida de Primíparos Facultad de Ingeniería")
+    .conNombre("Bienvenida de Primíparos de Ingeniería")
     .enFecha("2026-08-10")
     .build();
 
-  console.log("%c1. Evento Simple:", COLORS.blue);
+  console.log("%c1. Evento simple:", COLORS.blue);
   console.log(eventoSimple.resumen());
 
   // 2. Evento complejo (inscripción, ponentes, transmisión, certificado y firma digital)
   const eventoComplejo = new EventoBuilder()
-    .conNombre("Congreso Internacional de Arquitectura de Software")
+    .conNombre("Congreso de Arquitectura de Software")
     .enFecha("2026-11-15")
     .enLugar("Auditorio Central UCEVA")
     .conInscripcion(150)
     .conPonente("Ing. Jesús David Mejía Vergara")
     .conPonente("Dra. Elena Gómez")
-    .conTransmision("https://youtube.com/live/uceva-arquitectura-2026")
+    .conTransmision("https://youtube.com/live/uceva-arquitectura")
     .conCertificadoParticipacion()
     .conMetodoVerificacion("firma digital")
     .build();
 
-  console.log("%c2. Evento Complejo:", COLORS.green);
+  console.log("%c2. Evento complejo:", COLORS.green);
   console.log(eventoComplejo.resumen());
 
   // 3. Evento con certificado y reconocimiento facial
-  const eventoReconocimientoFacial = new EventoBuilder()
-    .conNombre("Seminario de Inteligencia Artificial y Visión por Computador")
+  const eventoFacial = new EventoBuilder()
+    .conNombre("Seminario de Inteligencia Artificial")
     .enFecha("2026-11-22")
-    .enLugar("Laboratorio de Redes y Software")
+    .enLugar("Laboratorio de Software")
     .conPonente("MSc. Carlos Andrés Ramírez")
     .conCertificadoParticipacion()
     .conMetodoVerificacion("reconocimiento facial")
     .build();
 
   console.log(
-    "%c3. Evento con Certificado y Reconocimiento Facial:",
+    "%c3. Evento con certificado y reconocimiento facial:",
     COLORS.purple,
   );
-  console.log(eventoReconocimientoFacial.resumen());
+  console.log(eventoFacial.resumen());
 
   // 4. Caso de error controlado con try/catch (inscripción con cupo 0)
-  console.log(
-    "%c4. Caso de Error Controlado (Inscripción con cupo 0):",
-    COLORS.yellow,
-  );
+  console.log("%c4. Caso de error controlado (cupo 0):", COLORS.yellow);
   try {
     const eventoInvalido = new EventoBuilder()
-      .conNombre("Taller Práctico de Deno y TypeScript")
+      .conNombre("Taller Práctico de Deno")
       .enFecha("2026-12-01")
       .conInscripcion(0)
       .build();
@@ -250,7 +224,7 @@ function main() {
     console.log(eventoInvalido.resumen());
   } catch (error) {
     if (error instanceof Error) {
-      console.log(`%c[Error de validación]: ${error.message}\n`, COLORS.red);
+      console.log(`%cError: ${error.message}`, COLORS.red);
     }
   }
 }

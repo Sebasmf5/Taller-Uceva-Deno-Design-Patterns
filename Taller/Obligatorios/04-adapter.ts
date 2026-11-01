@@ -1,45 +1,34 @@
 /**
- * ! Patrón Adapter (Adaptador / Wrapper):
+ * ! Patrón Adapter
  *
  * 1. ¿Qué hace el patrón?
- * Es un patrón de diseño estructural que permite la colaboración entre objetos
- * con interfaces incompatibles. Actúa como un intermediario (envoltorio) que
- * recibe las llamadas dirigidas a una interfaz estándar esperada por el sistema
- * y las traduce al formato, firma y parámetros que requiere una clase o librería
- * externa.
+ * Permite que clases con interfaces incompatibles trabajen juntas mediante un
+ * objeto adaptador que traduce las llamadas de una interfaz a otra.
  *
  * 2. ¿Qué problema se está resolviendo?
- * Una aplicación universitaria emite certificados de participación que incluyen
- * un código QR de verificación. La lógica de negocio del sistema espera trabajar
- * siempre con una interfaz uniforme (`GeneradorQR` con el método `generar(texto)`).
- * Sin embargo, las librerías externas disponibles para generar códigos QR tienen
- * métodos y parámetros completamente distintos (`makeCode(data, opciones)` vs.
- * `render(contenido)`) y su código fuente no se puede modificar. Si la aplicación
- * invocara directamente estas librerías, quedaría fuertemente acoplada a ellas y
- * cualquier cambio de proveedor obligaría a modificar la lógica de emisión de
- * certificados.
+ * La aplicación genera certificados con un código QR y espera usar siempre la
+ * interfaz `GeneradorQR`, pero las librerías externas tienen métodos y
+ * parámetros distintos (`makeCode` y `render`) y no se pueden modificar.
  *
  * 3. ¿Por qué Adapter es adecuado para ese problema?
- * - Desacopla por completo la lógica de negocio (`emitirCertificado`) de la
- *   implementación concreta de las librerías externas de terceros.
- * - Cumple con el Principio de Responsabilidad Única (SRP), separando la lógica
- *   de conversión de datos de la lógica principal de la aplicación.
- * - Cumple con el Principio Abierto/Cerrado (OCP), permitiendo integrar nuevas
- *   librerías de QR en el futuro creando nuevos adaptadores sin modificar una
- *   sola línea del código cliente ni de las librerías externas.
+ * Cada adaptador envuelve una librería externa y traduce `generar(texto)` al
+ * método propio de esa librería, de modo que la aplicación emite certificados
+ * sin acoplarse a ninguna librería en particular.
+ *
+ * https://refactoring.guru/es/design-patterns/adapter
  */
 
 import { COLORS } from "../../helpers/colors.ts";
 
-//* 1. Interfaz Objetivo (Target): lo que la aplicación espera utilizar
+//* 1. Interfaz objetivo (lo que la aplicación espera)
 interface GeneradorQR {
   generar(texto: string): string;
 }
 
-//* 2. Librerías Externas Incompatibles (Adaptees): simuladas, no se pueden modificar
+//* 2. Librerías externas incompatibles (simuladas, no se pueden modificar)
 class LibreriaQR {
   makeCode(data: string, opciones: { size: number; margen: number }): string {
-    return `[QR ${opciones.size}px | margen ${opciones.margen}] ${data}`;
+    return `[QR ${opciones.size}px, margen ${opciones.margen}] ${data}`;
   }
 }
 
@@ -49,29 +38,21 @@ class OtraLibreriaQR {
   }
 }
 
-//* 3. Clases Adaptadoras (Adapters): traducen la interfaz objetivo a cada librería
-
-// Adaptador para LibreriaQR
+//* 3. Adaptadores
 class AdaptadorLibreriaQR implements GeneradorQR {
   private libreria: LibreriaQR;
   private size: number;
-  private margen: number;
 
-  constructor(libreria: LibreriaQR, size: number = 200, margen: number = 2) {
+  constructor(libreria: LibreriaQR, size: number = 200) {
     this.libreria = libreria;
     this.size = size;
-    this.margen = margen;
   }
 
   generar(texto: string): string {
-    return this.libreria.makeCode(texto, {
-      size: this.size,
-      margen: this.margen,
-    });
+    return this.libreria.makeCode(texto, { size: this.size, margen: 2 });
   }
 }
 
-// Adaptador para OtraLibreriaQR
 class AdaptadorOtraLibreriaQR implements GeneradorQR {
   private otraLibreria: OtraLibreriaQR;
 
@@ -84,61 +65,32 @@ class AdaptadorOtraLibreriaQR implements GeneradorQR {
   }
 }
 
-//* 4. Código Cliente: conoce ÚNICAMENTE la interfaz GeneradorQR
+//* 4. Código cliente (solo conoce la interfaz GeneradorQR)
 function emitirCertificado(
   generador: GeneradorQR,
   participante: string,
   evento: string,
 ): void {
-  const payloadVerificacion = `CERT|${evento}|${participante}`;
-  const codigoQR = generador.generar(payloadVerificacion);
+  const texto = `CERT|${evento}|${participante}`;
+  const qr = generador.generar(texto);
 
-  console.log(
-    `%c====================================================`,
-    COLORS.cyan,
-  );
-  console.log(
-    `%c       CERTIFICADO DE PARTICIPACIÓN - UCEVA         `,
-    COLORS.green,
-  );
-  console.log(
-    `%c====================================================`,
-    COLORS.cyan,
-  );
-  console.log(`  Participante : ${participante}`);
-  console.log(`  Evento       : ${evento}`);
-  console.log(`  Código QR    : ${codigoQR}`);
-  console.log(
-    `%c====================================================\n`,
-    COLORS.cyan,
-  );
+  console.log(`Certificado de: %c${participante}`, COLORS.green);
+  console.log(`  Evento: ${evento}`);
+  console.log(`  QR:     ${qr}\n`);
 }
 
-function main() {
-  const evento = "Congreso de Arquitectura de Software 2026";
+function main(): void {
+  const evento = "Congreso de Arquitectura de Software";
 
-  // Uso con la primera librería externa mediante su adaptador (tamaño 200 por defecto)
-  console.log(
-    "%c1. Emitiendo certificado con AdaptadorLibreriaQR:",
-    COLORS.blue,
+  console.log("%c1. Usando AdaptadorLibreriaQR:", COLORS.blue);
+  const adaptador1: GeneradorQR = new AdaptadorLibreriaQR(new LibreriaQR());
+  emitirCertificado(adaptador1, "Sebastián Morales", evento);
+
+  console.log("%c2. Usando AdaptadorOtraLibreriaQR:", COLORS.purple);
+  const adaptador2: GeneradorQR = new AdaptadorOtraLibreriaQR(
+    new OtraLibreriaQR(),
   );
-  const libreriaExterna1 = new LibreriaQR();
-  const adaptadorQR1: GeneradorQR = new AdaptadorLibreriaQR(libreriaExterna1);
-
-  emitirCertificado(adaptadorQR1, "Sebastián Morales", evento);
-
-  // Uso con la segunda librería externa mediante su adaptador
-  // La función emitirCertificado no sufre ningún cambio
-  console.log(
-    "%c2. Emitiendo certificado con AdaptadorOtraLibreriaQR:",
-    COLORS.purple,
-  );
-  const libreriaExterna2 = new OtraLibreriaQR();
-  const adaptadorQR2: GeneradorQR = new AdaptadorOtraLibreriaQR(
-    libreriaExterna2,
-  );
-
-  emitirCertificado(adaptadorQR2, "Valentina Ríos", evento);
+  emitirCertificado(adaptador2, "Valentina Ríos", evento);
 }
 
 main();
